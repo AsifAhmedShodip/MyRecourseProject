@@ -8,6 +8,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GroupShuffleSplit
+
 
 
 class ModelTrainer:
@@ -16,8 +18,10 @@ class ModelTrainer:
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
+        self.group = None
         self.models = {
             'svm': SVC(kernel='linear'),
+            'svm_poly': SVC(kernel='poly', degree=3),
             'logistic_regression': LogisticRegression(),
             'random_forest': RandomForestClassifier(),
             'decision_tree': DecisionTreeClassifier(),
@@ -40,7 +44,8 @@ class ModelTrainer:
             return model
         else:
             raise ValueError(f"No model found with the name {model_name}")
-    
+        
+        
     def split_data(self, data, target_column, test_size=0.2, random_state=None):
         if target_column not in data.columns:
             print(f"Error: Target column '{target_column}' not found in the dataset.")
@@ -51,17 +56,38 @@ class ModelTrainer:
             train_test_split(X, y, test_size=test_size, random_state=random_state)
         print("Data split into train and test sets.")
         
+    # def normalize_columns(self, data, exclude_columns=None):
+    #     if data is not None:
+    #         scaler = StandardScaler()
+    #         numerical_cols = data.select_dtypes(include=['int64', 'float64']).columns
+    #         if exclude_columns:
+    #             numerical_cols = [col for col in numerical_cols if col not in exclude_columns]
+    #         if len(numerical_cols) > 0:
+    #             data[numerical_cols] = scaler.fit_transform(data[numerical_cols])
+    #             print("Numerical columns normalized.")
+    #         else:
+    #             print("No numerical columns to normalize.")
+    #     else:
+    #         print("Data not provided. Please provide data before normalizing.")
+    #     return data
+
     def normalize_columns(self, data, exclude_columns=None):
         if data is not None:
+            print("Data columns before any operation:", data.columns)  # Debug: Check all available columns
             scaler = StandardScaler()
             numerical_cols = data.select_dtypes(include=['int64', 'float64']).columns
+            print("Numerical columns detected:", numerical_cols)  # Debug: Check detected numerical columns
+
             if exclude_columns:
                 numerical_cols = [col for col in numerical_cols if col not in exclude_columns]
-            if numerical_cols.any():
+                print("Numerical columns after excluding:", numerical_cols)  # Debug: Check columns after exclusion
+
+            if len(numerical_cols) > 0:
                 data[numerical_cols] = scaler.fit_transform(data[numerical_cols])
                 print("Numerical columns normalized.")
             else:
                 print("No numerical columns to normalize.")
         else:
             print("Data not provided. Please provide data before normalizing.")
+
         return data

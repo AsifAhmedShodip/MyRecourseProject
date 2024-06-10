@@ -1,6 +1,6 @@
 from data_handling.data_handler import DataHandler
 
-class Credit(DataHandler):
+class Dataset(DataHandler):
     def __init__(self, target_column=None):
         super().__init__(target_column=target_column)
 

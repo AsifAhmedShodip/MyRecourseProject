@@ -3,12 +3,12 @@ from sklearn.preprocessing import LabelEncoder
 
 
 class Adult(DataHandler):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, target_column=None):
+        super().__init__(target_column=target_column)
 
     def load_csv(self, file_path=None):
         if file_path is None:
-            file_path = 'datasets/adult.csv'
+            file_path = 'datasets/raw/adult.csv'
 
         super().load_csv(file_path)
 

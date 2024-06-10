@@ -3,13 +3,17 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 import csv
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import mode
+import numpy as np
+
 
 
 class DataHandler:
-    def __init__(self):
+    def __init__(self, target_column=None):
         self.data = None
         self.group = None
-    
+        self.target_column = target_column
+
     def load_csv(self, file_path, delimiter=None):
         # Initialize delimiter early to ensure it's always defined
         if delimiter is None:
@@ -30,6 +34,27 @@ class DataHandler:
             print(f"File not found: {file_path}")
             self.data
 
+    def group_data(self, column_name):
+        if self.data is not None:
+            if column_name in self.data.columns:
+                self.group = self.data.groupby(column_name)
+                print(f"Data has been grouped by {column_name}.")
+            else:
+                print(f"Column '{column_name}' not found in the data.")
+        else:
+            print("Data not loaded. Please load data before trying to group it.")
+
+    def print_groups(self):
+        """
+        Prints each group created by the group_data method.
+        """
+        if self.group is not None:
+            for name, group in self.group:
+                print(f"Group by '{name}':")
+                print(group)
+                print("\n")  # Adds a newline for better readability between groups
+        else:
+            print("No groups to display. Please group data first.")
 
     def get_feature_names(self):
         if self.data is not None:
@@ -248,4 +273,120 @@ class DataHandler:
         else:
             print("Data not loaded.")
 
+    def filter_non_zero(self, columns=None):
+        if self.data is not None:
+            if columns is None:
+                # Apply to all numerical columns by default
+                columns = self.data.select_dtypes(include=[np.number]).columns.tolist()
+            else:
+                missing_columns = [col for col in columns if col not in self.data.columns]
+                if missing_columns:
+                    print(f"Warning: The following specified columns are not in the dataset and will be ignored: {missing_columns}")
+                    columns = [col for col in columns if col in self.data.columns]
+            # Filter out rows where any of the specified columns have zero value
+            self.data = self.data.loc[(self.data[columns] != 0).all(axis=1)]
+            print(f"Data filtered. Remaining rows: {len(self.data)}.")
+        else:
+            print("Data not loaded. Please load data before filtering.")
 
+    def balanced_sample(self, sample_size_per_class):
+        if self.target_column and self.target_column in self.data.columns:
+            # Group by the target column and sample equal amounts from each group
+            grouped = self.data.groupby(self.target_column)
+            samples = [grp.sample(n=min(sample_size_per_class, len(grp)), random_state=42) for name, grp in grouped]
+            sampled_data = pd.concat(samples)
+            self.data = sampled_data
+        else:
+            print(f"Target column '{self.target_column}' not found or not specified.")
+
+    def remove_outliers(self, target_column=None):
+        if self.data is not None:
+            if target_column and target_column in self.data.columns:
+                data_without_target = self.data.drop(columns=[target_column])
+            else:
+                data_without_target = self.data
+
+            Q1 = data_without_target.quantile(0.25)
+            Q3 = data_without_target.quantile(0.75)
+            IQR = Q3 - Q1
+
+            original_size = len(self.data)
+            # Filtering out the outliers by keeping only valid values
+            self.data = self.data[~((data_without_target < (Q1 - 1.5 * IQR)) | (data_without_target > (Q3 + 1.5 * IQR))).any(axis=1)]
+            new_size = len(self.data)
+
+            print(f"Removed {original_size - new_size} outliers. New dataset size: {new_size}")
+        else:
+            print("Data not loaded. Please load data before removing outliers.")
+
+    def print_identical_rows_count(self):
+        if self.data is not None:
+            # Identifying all duplicate rows, including the first occurrence
+            duplicate_rows = self.data.duplicated(keep=False)
+            # Filtering to only include rows that appear more than once
+            duplicate_data = self.data[duplicate_rows]
+
+            if not duplicate_data.empty:
+                print("Duplicate rows that appear more than once:")
+                print(duplicate_data)
+            else:
+                print("No duplicate rows that appear more than once were found.")
+        else:
+            print("Data not loaded. Please load data to check for duplicate rows.")
+
+
+    def print_duplicate_rows_excluding_columns(self, exclude_columns=None):
+        if self.data is not None:
+            if exclude_columns:
+                # Ensure it's a list even if a single column name is provided
+                exclude_columns = [exclude_columns] if isinstance(exclude_columns, str) else exclude_columns
+                cols_to_use = self.data.columns.difference(exclude_columns)
+            else:
+                cols_to_use = self.data.columns
+
+            # Finding duplicates based on the filtered columns
+            duplicate_mask = self.data.duplicated(subset=cols_to_use, keep=False)
+            duplicates = self.data.loc[duplicate_mask]
+
+            if duplicates.empty:
+                print("No duplicates found.")
+            else:
+                grouped = duplicates.groupby(list(cols_to_use))
+                group_number = 1
+                for name, group in grouped:
+                    print(f"{group_number}st duplicate group:")
+                    print(group)
+                    group_number += 1
+        else:
+            print("Data not loaded. Please load data before checking for duplicates.")
+
+    def merge_duplicates_assign_majority(self, exclude_columns=None):
+        if self.data is not None:
+            if exclude_columns:
+                exclude_columns = [exclude_columns] if isinstance(exclude_columns, str) else exclude_columns
+                data_columns = [col for col in self.data.columns if col not in exclude_columns]
+
+                duplicates = self.data.duplicated(subset=data_columns, keep=False)
+
+                if duplicates.any():
+                    duplicate_data = self.data.loc[duplicates]
+                    grouped = duplicate_data.groupby(data_columns)
+
+                    for _, group in grouped:
+                        if len(group) > 1:
+                            for exclude_column in exclude_columns:
+                                most_common = group[exclude_column].mode()
+                                most_common_value = most_common.iloc[0] if not most_common.empty else group[exclude_column].iloc[0]
+                                self.data.loc[group.index, exclude_column] = most_common_value
+
+                    original_count = len(self.data)
+                    self.data.drop_duplicates(subset=data_columns, keep='first', inplace=True)
+                    new_count = len(self.data)
+                    print(f"Original data count: {original_count}, new data count after merging duplicates: {new_count}")
+                    print("Duplicates merged and majority value assigned based on the most common value of excluded columns.")
+                else:
+                    print("No duplicates found to merge.")
+            else:
+                print("Exclude columns not specified.")
+        else:
+            print("Data not loaded. Please load data before merging duplicates.")

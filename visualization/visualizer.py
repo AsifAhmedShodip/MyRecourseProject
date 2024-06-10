@@ -1,29 +1,52 @@
 # import numpy as np
 # import matplotlib.pyplot as plt
 # import seaborn as sns
+# import pandas as pd
+
+# # plt.scatter(X[misclassified_indices, 0], X[misclassified_indices, 1], 
+#         #             c=y[misclassified_indices], cmap=plt.cm.coolwarm, edgecolor='k', label='Misclassified')
+
+
 
 # class Visualizer:
 #     def __init__(self):
 #         pass
 
 #     def plot_decision_boundary(self, model, X, y, misclassified_indices):
-#         h = .02  # step size in the mesh
+#         # Ensure X and y are numpy arrays
+#         X = X.to_numpy() if isinstance(X, pd.DataFrame) else X
+#         y = y.to_numpy() if isinstance(y, pd.Series) else y
+
+#         # Step size in the mesh
+#         h = .02
 #         x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
 #         y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-#         # xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
-#         # Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+#         xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 
-#         # Z = Z.reshape(xx.shape)
-#         # plt.figure(figsize=(8, 6))
-#         # plt.contourf(xx, yy, Z, cmap=plt.cm.coolwarm, alpha=0.8)
+#         # Predict class labels for each point in the mesh
+#         Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+#         Z = Z.reshape(xx.shape)
 
-#         # plt.scatter(X[misclassified_indices, 0], X[misclassified_indices, 1],
-#         #             c='black', marker='x', label='Misclassified')
+#         # Plot decision boundary
+#         plt.figure(figsize=(10, 8))
+#         contour = plt.contourf(xx, yy, Z, cmap=plt.cm.coolwarm, alpha=0.8)
+        
+#         # Create a colorbar
+#         plt.colorbar(contour, label='Class labels')
 
-#         # # plt.xlabel(selected_columns[0])
-#         # # plt.ylabel(selected_columns[1])
-#         # plt.title('Decision Boundary')
-#         # plt.show()
+#         # Scatter plot of the actual points
+#         scatter = plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.coolwarm, edgecolor='k', s=20, linewidth=1)
+
+#         # Highlight misclassified points
+#         plt.scatter(X[misclassified_indices, 0], X[misclassified_indices, 1], c='yellow', s=50, edgecolor='k', linewidth=1, marker='o', label='Misclassified')
+
+#         plt.title('Decision Boundary with Class Regions')
+#         plt.xlabel('Feature 1')
+#         plt.ylabel('Feature 2')
+#         plt.legend(loc='upper right', title="Legend", frameon=True, fancybox=True)
+#         plt.show()
+
+
 
 #     def plot_feature_distributions(self, X, features):
 #         for column_index, feature_name in enumerate(features):
@@ -102,7 +125,7 @@ class Visualizer:
         self.X_test = X_test
         self.y_test = y_test
 
-    def plot_decision_boundary(self):
+    def plot_decision_boundary(self, feature_names):
         X = self.X_test.values if isinstance(self.X_test, pd.DataFrame) else self.X_test
         y = self.y_test.values if isinstance(self.y_test, pd.Series) else self.y_test
 
@@ -112,8 +135,8 @@ class Visualizer:
         
         # Customizing the plot
         plt.title('Decision Boundary with Test Data')
-        plt.xlabel('Feature 1')
-        plt.ylabel('Feature 2')
+        plt.xlabel(feature_names[0])
+        plt.ylabel(feature_names[1])
         plt.legend(loc='upper left')
         plt.show()
 
