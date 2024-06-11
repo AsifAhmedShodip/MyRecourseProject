@@ -8,6 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+import numpy as np
 
 class ModelTrainer:
     def __init__(self):
@@ -15,6 +16,7 @@ class ModelTrainer:
         self.y_train = None
         self.X_test = None
         self.y_test = None
+        self.model = None  # Initialize a model attribute
         self.models = {
             'svm': SVC(kernel='linear'),
             'svm_poly': SVC(kernel='poly', degree=3),
@@ -55,10 +57,10 @@ class ModelTrainer:
             X_train = self.X_train
             y_train = self.y_train
         if model_name in self.models:
-            model = self.models[model_name]
-            model.fit(X_train, y_train)
+            self.model = self.models[model_name]  # Store the current model after training
+            self.model.fit(X_train, y_train)
             print(f"{model_name} model trained successfully.")
-            return model
+            return self.model
         else:
             raise ValueError(f"No model found with the name {model_name}")
 
@@ -67,3 +69,22 @@ class ModelTrainer:
             return self.models[model_name]
         else:
             raise ValueError(f"No model found with the name {model_name}")
+        
+
+    def find_misclassified_samples(self):
+        y_pred = self.model.predict(self.X_test)
+        misclassified = self.y_test != self.y_pred
+        return np.where(misclassified)[0]  # Indices of misclassified samples
+        
+
+    def distance_to_hyperplane(self, point):
+        """
+        Calculate the distance from a point to the decision boundary of the trained linear model.
+        """
+        if not hasattr(self.model, 'coef_'):
+            raise ValueError("This method is only applicable to linear models.")
+        coef = self.model.coef_[0]
+        intercept = self.model.intercept_[0]
+        num = np.abs(np.dot(coef, point) + intercept)
+        denom = np.linalg.norm(coef)
+        return num / denom
