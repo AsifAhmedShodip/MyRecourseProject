@@ -1,24 +1,20 @@
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, ExtraTreesClassifier
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, ExtraTreesClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GroupShuffleSplit
-
-
 
 class ModelTrainer:
-    def __init__(self, X_train=None, y_train=None, X_test=None, y_test=None):
-        self.X_train = X_train
-        self.y_train = y_train
-        self.X_test = X_test
-        self.y_test = y_test
-        self.group = None
+    def __init__(self):
+        self.X_train = None
+        self.y_train = None
+        self.X_test = None
+        self.y_test = None
         self.models = {
             'svm': SVC(kernel='linear'),
             'svm_poly': SVC(kernel='poly', degree=3),
@@ -36,58 +32,38 @@ class ModelTrainer:
             'qda': QuadraticDiscriminantAnalysis()
         }
 
-    def train(self, model_name):
-        if model_name in self.models:
-            model = self.models[model_name]
-            model.fit(self.X_train, self.y_train)
-            print(f"{model_name} model trained successfully.")
-            return model
-        else:
-            raise ValueError(f"No model found with the name {model_name}")
-        
-        
     def split_data(self, data, target_column, test_size=0.2, random_state=None):
         if target_column not in data.columns:
             print(f"Error: Target column '{target_column}' not found in the dataset.")
-            return
+            return None, None, None, None  # Return a tuple of None to avoid errors when unpacking
         X = data.drop(columns=[target_column])
         y = data[target_column]
         self.X_train, self.X_test, self.y_train, self.y_test = \
             train_test_split(X, y, test_size=test_size, random_state=random_state)
         print("Data split into train and test sets.")
-        
-    # def normalize_columns(self, data, exclude_columns=None):
-    #     if data is not None:
-    #         scaler = StandardScaler()
-    #         numerical_cols = data.select_dtypes(include=['int64', 'float64']).columns
-    #         if exclude_columns:
-    #             numerical_cols = [col for col in numerical_cols if col not in exclude_columns]
-    #         if len(numerical_cols) > 0:
-    #             data[numerical_cols] = scaler.fit_transform(data[numerical_cols])
-    #             print("Numerical columns normalized.")
-    #         else:
-    #             print("No numerical columns to normalize.")
-    #     else:
-    #         print("Data not provided. Please provide data before normalizing.")
-    #     return data
+        return self.X_train, self.X_test, self.y_train, self.y_test  # Return the split data
 
-    def normalize_columns(self, data, exclude_columns=None):
-        if data is not None:
-            print("Data columns before any operation:", data.columns)  # Debug: Check all available columns
-            scaler = StandardScaler()
-            numerical_cols = data.select_dtypes(include=['int64', 'float64']).columns
-            print("Numerical columns detected:", numerical_cols)  # Debug: Check detected numerical columns
+    def scale_features(self, X_train, X_test):
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+        return X_train_scaled, X_test_scaled
 
-            if exclude_columns:
-                numerical_cols = [col for col in numerical_cols if col not in exclude_columns]
-                print("Numerical columns after excluding:", numerical_cols)  # Debug: Check columns after exclusion
-
-            if len(numerical_cols) > 0:
-                data[numerical_cols] = scaler.fit_transform(data[numerical_cols])
-                print("Numerical columns normalized.")
-            else:
-                print("No numerical columns to normalize.")
+    def train(self, model_name, X_train=None, y_train=None):
+        # Use internal data if no data is provided
+        if X_train is None or y_train is None:
+            X_train = self.X_train
+            y_train = self.y_train
+        if model_name in self.models:
+            model = self.models[model_name]
+            model.fit(X_train, y_train)
+            print(f"{model_name} model trained successfully.")
+            return model
         else:
-            print("Data not provided. Please provide data before normalizing.")
+            raise ValueError(f"No model found with the name {model_name}")
 
-        return data
+    def get_model(self, model_name):
+        if model_name in self.models:
+            return self.models[model_name]
+        else:
+            raise ValueError(f"No model found with the name {model_name}")
