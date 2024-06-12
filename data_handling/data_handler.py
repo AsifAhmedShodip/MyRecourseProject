@@ -89,7 +89,7 @@ class DataHandler:
             for column in self.data.columns:
                 if self.data[column].dtype == 'object':
                     self.data[column] = label_encoder.fit_transform(self.data[column])
-                    print(f"Encoded {column}")
+                    # print(f"Encoded {column}")
         else:
             print("Data not loaded. Please load data before encoding.")
 
