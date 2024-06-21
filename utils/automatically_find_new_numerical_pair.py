@@ -78,8 +78,6 @@ def automated_evaluation(file_path, target_column, model_type='svm', threshold=0
                 'F1 Score': metrics['F1 Score'],
                 'Confusion Matrix': metrics['Confusion Matrix'].tolist(),
                 'Classification Report': metrics['Classification Report']
-
-                
             })
         else:
             # Print necessary information for all pairs
