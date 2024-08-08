@@ -55,10 +55,8 @@ class RecourseCostCalculator:
         return data
     
     def apply_gender_rewards(self, data):
-        # Make a copy to avoid changes to the original DataFrame outside this function
         data_modified = data.copy()
 
-        # Store original ranks
         data_modified['Previous Rank'] = data_modified['Rank'].copy()
 
         # Apply min-max scaling to female recourse costs
