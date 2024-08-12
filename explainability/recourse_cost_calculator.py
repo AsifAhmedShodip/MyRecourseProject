@@ -15,8 +15,7 @@ class RecourseCostCalculator:
 
     def calculate_recourse_costs(self, data):
         return np.array([self.calculate_distance(point) for point in data])
-        
-
+    
     def calculate_group_recourse_costs(self, data, group_identifiers):
         if isinstance(data, pd.DataFrame):
             data = data.to_numpy()
