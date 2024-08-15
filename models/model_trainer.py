@@ -16,6 +16,7 @@ class ModelTrainer:
         self.y_train = None
         self.X_test = None
         self.y_test = None
+        self.scaler = StandardScaler()
         self.model = None  # Initialize a model attribute
         self.models = {
             'svm': SVC(kernel='linear'),
@@ -46,9 +47,8 @@ class ModelTrainer:
         return self.X_train, self.X_test, self.y_train, self.y_test  # Return the split data
 
     def scale_features(self, X_train, X_test):
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
+        X_train_scaled = self.scaler.fit_transform(X_train)
+        X_test_scaled = self.scaler.transform(X_test)
         return X_train_scaled, X_test_scaled
 
     def train(self, model_name, X_train=None, y_train=None):
