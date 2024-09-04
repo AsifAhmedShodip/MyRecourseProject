@@ -1,17 +1,28 @@
 import numpy as np
 import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
 
 class RecourseCostCalculator:
     def __init__(self, model):
         self.model = model
-        self.weights = model.coef_[0]
-        self.intercept = model.intercept_[0]
+
+        if isinstance(model, DecisionTreeClassifier):
+            self.model_type = 'decision_tree'
+        else:
+            self.model_type = 'linear'
+            self.weights = model.coef_[0]
+            self.intercept = model.intercept_[0]
 
     def calculate_distance(self, data_point):
-        numerator = np.abs(np.dot(self.weights, data_point) + self.intercept)
-        denominator = np.linalg.norm(self.weights)
-        distance = numerator / denominator
-        return round(distance, 2)
+        if self.model_type == 'linear':
+            numerator = np.abs(np.dot(self.weights, data_point) + self.intercept)
+            denominator = np.linalg.norm(self.weights)
+            distance = numerator / denominator
+            return round(distance, 2)
+        elif self.model_type == 'decision_tree':
+            return self._calculate_distance_decision_tree(data_point)
+        else:
+            raise ValueError("Unsupported model type")
 
     def calculate_recourse_costs(self, data):
         return np.array([self.calculate_distance(point) for point in data])
@@ -32,6 +43,35 @@ class RecourseCostCalculator:
             group_costs[group] = costs
 
         return group_costs
+    
+    def _calculate_distance_decision_tree(self, data_point):
+        # Get the path of the data point through the decision tree
+        node_indicator = self.model.decision_path([data_point])
+        leaf_id = self.model.apply([data_point])[0]
+
+        # Retrieve the tree's structure
+        tree = self.model.tree_
+        feature = tree.feature
+        threshold = tree.threshold
+
+        # Start at the root node and traverse the path
+        distance = float('inf')
+        for node_index in node_indicator.indices[node_indicator.indptr[0]:node_indicator.indptr[1]]:
+            if feature[node_index] != -2:  # If the node is not a leaf node
+                feature_index = feature[node_index]
+                threshold_value = threshold[node_index]
+                current_value = data_point[feature_index]
+
+                # Calculate the distance to the threshold for the current feature
+                if current_value <= threshold_value:
+                    candidate_distance = threshold_value - current_value
+                else:
+                    candidate_distance = current_value - threshold_value
+                
+                # Track the minimum distance to any threshold that would flip the decision
+                distance = min(distance, candidate_distance)
+
+        return round(distance, 2)  # Return the minimum distance found
     
     def rank_data_points(self, scaled_data, gender_data, top_n=None):
         costs = self.calculate_recourse_costs(scaled_data)
