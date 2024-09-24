@@ -72,7 +72,7 @@ class Visualizer:
 
         annotations = [
             dict(
-                x=1.05, y=1.0, xref='paper', yref='paper',
+                x=1, y=1.0, xref='paper', yref='paper',
                 text='Class 0: Red<br>Class 1: Blue<br>Male: Black Ring<br>Female: White Ring',
                 showarrow=False,
                 align='left',
